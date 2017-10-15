@@ -97,12 +97,23 @@ following forms:
       "transform": "value / 63.0",
       "inverse": "int(round(value * 63))",
   
+  Alternatively, you may omit 'transform' and 'inverse' (or set them to `null`)
+  and no transformation will be applied.
+  
   The 'description' value is a human readable description to use for the alias'
-  listing in the Qth directory. If not given, the description of the target is
-  copied.
+  listing in the Qth directory. If not given, a default description stating
+  what the alias' target is will be used.
 
-Aliases must have unique targets. If multiple aliases are defined with a given
-'alias' path, only the most recently added will be retained.
+Aliases must have unique targets. Aliases may in turn be aliased by create
+cyclic dependencies must not be created (this is checked).
+
+If an alias is added with an existing 'alias' path, the existing alias will be
+replaced.
+
+### Error reporting (`meta/alias/error`)
+
+If there is a problem creating an alias (or evaluating the transform or inverse
+code) a human-readable error event is sent to `meta/alias/error`.
 
 ### Removing aliases (`meta/alias/remove`)
 
@@ -114,7 +125,8 @@ To delete an existing alias, send an event with the alias's Qth path to
 The configured set of aliases can be found in the `meta/alias/aliases`
 property. This will be of the form of a dictionary of long-form alias
 descriptions keyed by the alias path. Though not recommended, it is also valid
-to create and delete aliases by changing this property.
+to create and delete aliases by changing this property directly. Only long form
+specifications should be added.
 
 
 Development
