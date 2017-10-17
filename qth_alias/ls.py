@@ -147,7 +147,7 @@ class Ls(object):
 
         for path, callbacks in self._callbacks.items():
             value = get_path_listing(self._ls_tree, path)
-            if value != self._last_path_value[path]:
+            if value != self._last_path_value.get(path, None):
                 self._last_path_value[path] = value
                 todo.extend(cb(path, value) for cb in self._callbacks[path])
 
