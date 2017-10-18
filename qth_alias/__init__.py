@@ -1,11 +1,12 @@
 import asyncio
 
-import qth
 import json
 import logging
 
+import qth
+from qth_ls import Ls
+
 from qth_alias.version import __version__  # noqa
-from qth_alias.ls import Ls
 from qth_alias.alias import Alias
 
 
