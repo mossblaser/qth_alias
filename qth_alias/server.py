@@ -9,16 +9,16 @@ from qth_alias import AliasServer, __version__
 def main():
     parser = ArgumentParser(
         description="A service which creates aliases for Qth paths.")
-    parser.add_argument("--cache", "-c", default="aliases.json", nargs=1,
+    parser.add_argument("--cache", "-c", default="aliases.json",
                         help="Filename of alias cache (default %(default)s).")
-    parser.add_argument("--prefix", "-p", default="meta/alias/", nargs=1,
+    parser.add_argument("--prefix", "-p", default="meta/alias/",
                         help="Prefix for control events/properties "
                              "(default %(default)s).")
-    parser.add_argument("--host", "-H", default=None, nargs=1,
+    parser.add_argument("--host", "-H", default=None,
                         help="Qth server hostname.")
-    parser.add_argument("--port", "-P", default=None, nargs=1, type=int,
+    parser.add_argument("--port", "-P", default=None, type=int,
                         help="Qth server port.")
-    parser.add_argument("--keepalive", "-K", default=10, nargs=1, type=int,
+    parser.add_argument("--keepalive", "-K", default=10, type=int,
                         help="MQTT Keepalive interval (seconds).")
     parser.add_argument("--quiet", "-q", default=False, action="store_true",
                         help="Only report errors.")
