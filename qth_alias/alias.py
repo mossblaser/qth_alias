@@ -66,7 +66,7 @@ class Alias(object):
         """Remove the alias."""
         self._deleted = True
 
-        with await self._registration_change_lock:
+        async with self._registration_change_lock:
             todo = []
 
             # Remove the alias registration
@@ -211,7 +211,7 @@ class Alias(object):
         else:
             self._target_registration = None
 
-        with await self._registration_change_lock:
+        async with self._registration_change_lock:
             if self._deleted:
                 return
 

@@ -122,7 +122,7 @@ class AliasServer(object):
 
     async def close(self):
         """Shut down the alias server"""
-        with await self._aliases_lock:
+        async with self._aliases_lock:
             # Unregister everything and delete all aliases
             await asyncio.wait([
                 self._client.unregister(self._aliases_path),
@@ -240,7 +240,7 @@ class AliasServer(object):
 
     async def _update_aliases(self, aliases):
         """Update the set of aliases to match a new specification."""
-        with await self._aliases_lock:
+        async with self._aliases_lock:
             # Do nothing if not changed
             if self._aliases_json == aliases:
                 return
