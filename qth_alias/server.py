@@ -39,8 +39,7 @@ def main():
                     prefix=args.prefix,
                     host=args.host,
                     port=args.port,
-                    keepalive=args.keepalive,
-                    loop=loop)
+                    keepalive=args.keepalive)
 
     try:
         loop.run_until_complete(s.async_init())

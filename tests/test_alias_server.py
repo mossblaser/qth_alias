@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 import json
 
 from mock import Mock
@@ -10,23 +11,23 @@ import qth_alias
 from qth_alias import has_cycle, AliasServer
 
 
-@pytest.fixture()
-def mock_client(event_loop, monkeypatch):
+@pytest_asyncio.fixture()
+def mock_client(monkeypatch):
     mock_client = Mock()
 
     monkeypatch.setattr(qth, "Client", Mock(return_value=mock_client))
 
-    mock_client.register = AsyncMock(event_loop)
-    mock_client.unregister = AsyncMock(event_loop)
+    mock_client.register = AsyncMock()
+    mock_client.unregister = AsyncMock()
 
-    mock_client.set_property = AsyncMock(event_loop)
-    mock_client.watch_property = AsyncMock(event_loop)
-    mock_client.unwatch_property = AsyncMock(event_loop)
-    mock_client.delete_property = AsyncMock(event_loop)
+    mock_client.set_property = AsyncMock()
+    mock_client.watch_property = AsyncMock()
+    mock_client.unwatch_property = AsyncMock()
+    mock_client.delete_property = AsyncMock()
 
-    mock_client.send_event = AsyncMock(event_loop)
-    mock_client.watch_event = AsyncMock(event_loop)
-    mock_client.unwatch_event = AsyncMock(event_loop)
+    mock_client.send_event = AsyncMock()
+    mock_client.watch_event = AsyncMock()
+    mock_client.unwatch_event = AsyncMock()
 
     return mock_client
 
@@ -42,8 +43,8 @@ def test_has_cycle():
 
 
 @pytest.mark.asyncio
-async def test_async_init(mock_client, event_loop):
-    s = AliasServer(loop=event_loop)
+async def test_async_init(mock_client):
+    s = AliasServer()
     await s.async_init()
 
     # Check registrations
@@ -80,8 +81,8 @@ async def test_async_init(mock_client, event_loop):
     # Unexpected value in long form
     {"target": "foo", "alias": "bar", "what?": "nope"},
 ])
-async def test_on_add_invalid_forms(mock_client, event_loop, arg):
-    s = AliasServer(loop=event_loop)
+async def test_on_add_invalid_forms(mock_client, arg):
+    s = AliasServer()
     await s.async_init()
 
     await s._on_add("meta/alias/add", arg)
@@ -128,11 +129,11 @@ async def test_on_add_invalid_forms(mock_client, event_loop, arg):
         "description": "A custom alias.",
     }),
 ])
-async def test_on_add_long_form(mock_client, event_loop, value, expected):
-    s = AliasServer(loop=event_loop)
+async def test_on_add_long_form(mock_client, value, expected):
+    s = AliasServer()
     await s.async_init()
 
-    s._update_aliases = AsyncMock(event_loop)
+    s._update_aliases = AsyncMock()
 
     # Check defaults
     await s._on_add("meta/alias/add", value)
@@ -141,14 +142,14 @@ async def test_on_add_long_form(mock_client, event_loop, value, expected):
 
 
 @pytest.mark.asyncio
-async def test_update_aliases(mock_client, event_loop, monkeypatch):
+async def test_update_aliases(mock_client, monkeypatch):
     # Mock out the Alias objects for ease
     alias_objects = []
 
     def _Alias(alias_server, **description):
         alias = Mock()
-        alias.async_init = AsyncMock(event_loop)
-        alias.delete = AsyncMock(event_loop)
+        alias.async_init = AsyncMock()
+        alias.delete = AsyncMock()
         alias.json = description
 
         alias_objects.append(alias)
@@ -156,7 +157,7 @@ async def test_update_aliases(mock_client, event_loop, monkeypatch):
     Alias = Mock(side_effect=_Alias)
     monkeypatch.setattr(qth_alias, "Alias", Alias)
 
-    s = AliasServer(loop=event_loop)
+    s = AliasServer()
     await s.async_init()
 
     # Staying empty should result in no change
@@ -328,8 +329,8 @@ async def test_update_aliases(mock_client, event_loop, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_on_remove(mock_client, event_loop):
-    s = AliasServer(loop=event_loop)
+async def test_on_remove(mock_client):
+    s = AliasServer()
     await s.async_init()
 
     await s._on_add("meta/alias/add", ["foo/target", "foo/alias"])
@@ -339,8 +340,8 @@ async def test_on_remove(mock_client, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_on_change(mock_client, event_loop):
-    s = AliasServer(loop=event_loop)
+async def test_on_change(mock_client):
+    s = AliasServer()
     await s.async_init()
 
     await s._on_add("meta/alias/add", ["foo/target", "foo/alias"])
@@ -350,14 +351,14 @@ async def test_on_change(mock_client, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_file_cache_dev_null(mock_client, event_loop):
-    s = AliasServer(cache_file="/dev/null", loop=event_loop)
+async def test_file_cache_dev_null(mock_client):
+    s = AliasServer(cache_file="/dev/null")
     await s.async_init()
     assert s._aliases == {}
 
 
 @pytest.mark.asyncio
-async def test_file_cache(mock_client, event_loop, tmpdir):
+async def test_file_cache(mock_client, tmpdir):
     cache_file = tmpdir.join("cache.json")
     cache_file.write(json.dumps({
         "foo/alias": {
@@ -369,7 +370,7 @@ async def test_file_cache(mock_client, event_loop, tmpdir):
         }
     }))
 
-    s = AliasServer(cache_file=str(cache_file), loop=event_loop)
+    s = AliasServer(cache_file=str(cache_file))
     await s.async_init()
 
     # Initial contents should be loaded and sent to Qth
@@ -407,8 +408,8 @@ async def test_file_cache(mock_client, event_loop, tmpdir):
 
 
 @pytest.mark.asyncio
-async def test_close(mock_client, event_loop):
-    s = AliasServer(loop=event_loop)
+async def test_close(mock_client):
+    s = AliasServer()
     await s.async_init()
     await s._on_add("meta/alias/add", ["foo/target", "foo/alias"])
     await s._aliases["foo/alias"]._on_target_registration_changed(

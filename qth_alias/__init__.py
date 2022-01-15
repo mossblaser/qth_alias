@@ -31,7 +31,7 @@ class AliasServer(object):
     """The Qth alias server."""
 
     def __init__(self, cache_file="/dev/null", prefix="meta/alias/",
-                 host=None, port=None, keepalive=10, loop=None):
+                 host=None, port=None, keepalive=10):
         """
         Initialise the Qth Alias server. Call async_init() soon after
         construciton.
@@ -48,11 +48,8 @@ class AliasServer(object):
             Qth port.
         keepalive : int
             MQTT Keepalive interval.
-        loop : qsyncio.AbstractEventLoop
-            The event loop to use.
         """
         self._cache_file = cache_file
-        self._loop = loop or asyncio.get_event_loop()
 
         self._add_path = prefix + "add"
         self._remove_path = prefix + "remove"
@@ -62,13 +59,13 @@ class AliasServer(object):
         self._client = qth.Client(
             "qth_alias",
             "Defines aliases of Qth properties and events.",
-            host=host, port=port, keepalive=keepalive, loop=self._loop
+            host=host, port=port, keepalive=keepalive
         )
 
-        self._ls = Ls(self._client, self._loop)
+        self._ls = Ls(self._client)
 
         # Lock to hold while self._aliases is being updated.
-        self._aliases_lock = asyncio.Lock(loop=self._loop)
+        self._aliases_lock = asyncio.Lock()
 
         # The current set of alias registrations.
         # {"path/to/alias": Alias, ...}
@@ -86,7 +83,7 @@ class AliasServer(object):
             logging.exception(e)
 
         # Register with Qth Registrar
-        await asyncio.wait([
+        await asyncio.wait(list(map(asyncio.create_task, [
             self._client.register(self._aliases_path,
                                   qth.PROPERTY_ONE_TO_MANY,
                                   "The currently registered set of aliases. "
@@ -114,7 +111,7 @@ class AliasServer(object):
             self._client.watch_event(self._add_path, self._on_add),
             self._client.watch_event(self._remove_path, self._on_remove),
             self._client.watch_property(self._aliases_path, self._on_change),
-        ], loop=self._loop)
+        ])))
 
         # Set property to initialise the alias set (and also the property in
         # Qth).
@@ -124,7 +121,7 @@ class AliasServer(object):
         """Shut down the alias server"""
         async with self._aliases_lock:
             # Unregister everything and delete all aliases
-            await asyncio.wait([
+            await asyncio.wait(list(map(asyncio.create_task, [
                 self._client.unregister(self._aliases_path),
                 self._client.unregister(self._add_path),
                 self._client.unregister(self._remove_path),
@@ -135,7 +132,7 @@ class AliasServer(object):
                                               self._on_change),
             ] + [
                 alias.delete() for alias in self._aliases.values()
-            ], loop=self._loop)
+            ])))
 
             # Delete aliases property (after all watches have been removed)
             await self._client.delete_property(self._aliases_path)
@@ -149,7 +146,7 @@ class AliasServer(object):
 
     def _error_sync(self, message):
         """Non-async wrapper around _error."""
-        self._loop.create_task(self._error(message))
+        asyncio.get_event_loop().create_task(self._error(message))
 
     async def _error(self, message):
         """Report an error via the console and meta/alias/error."""
@@ -288,7 +285,7 @@ class AliasServer(object):
                 self._aliases_json))
 
             if todo:
-                await asyncio.wait(todo, loop=self._loop)
+                await asyncio.wait([asyncio.create_task(c) for c in todo])
 
             # Save aliases to file
             try:

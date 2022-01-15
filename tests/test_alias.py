@@ -11,39 +11,38 @@ from qth_alias.alias import Alias
 
 
 @pytest.fixture()
-def mock_client(event_loop):
+def mock_client():
     mock_client = Mock()
 
-    mock_client.register = AsyncMock(event_loop)
-    mock_client.unregister = AsyncMock(event_loop)
+    mock_client.register = AsyncMock()
+    mock_client.unregister = AsyncMock()
 
-    mock_client.set_property = AsyncMock(event_loop)
-    mock_client.watch_property = AsyncMock(event_loop)
-    mock_client.unwatch_property = AsyncMock(event_loop)
-    mock_client.delete_property = AsyncMock(event_loop)
+    mock_client.set_property = AsyncMock()
+    mock_client.watch_property = AsyncMock()
+    mock_client.unwatch_property = AsyncMock()
+    mock_client.delete_property = AsyncMock()
 
-    mock_client.send_event = AsyncMock(event_loop)
-    mock_client.watch_event = AsyncMock(event_loop)
-    mock_client.unwatch_event = AsyncMock(event_loop)
+    mock_client.send_event = AsyncMock()
+    mock_client.watch_event = AsyncMock()
+    mock_client.unwatch_event = AsyncMock()
 
     return mock_client
 
 
 @pytest.fixture()
-def mock_ls(event_loop):
+def mock_ls():
     mock_ls = Mock()
 
-    mock_ls.watch_path = AsyncMock(event_loop)
-    mock_ls.unwatch_path = AsyncMock(event_loop)
+    mock_ls.watch_path = AsyncMock()
+    mock_ls.unwatch_path = AsyncMock()
 
     return mock_ls
 
 
 @pytest.fixture()
-def mock_alias_server(mock_client, mock_ls, event_loop):
+def mock_alias_server(mock_client, mock_ls):
     mock_alias_server = Mock()
 
-    mock_alias_server._loop = event_loop
     mock_alias_server._client = mock_client
     mock_alias_server._ls = mock_ls
 
@@ -321,8 +320,7 @@ async def test_on_target_registration_changed(mock_alias_server, mock_client):
 
 
 @pytest.mark.asyncio
-async def test_multiple_registration_changes(mock_alias_server, mock_client,
-                                             event_loop):
+async def test_multiple_registration_changes(mock_alias_server, mock_client):
     a = Alias(mock_alias_server, "foo/target", "foo/alias",
               "value / 63.0", "int(value * 63)",
               "Alias description.")
@@ -332,7 +330,7 @@ async def test_multiple_registration_changes(mock_alias_server, mock_client,
     # number of calls which should finally end with a consistent state.
 
     # Make the 'watch_property' call block to simulate calls taking time
-    watch_property_event = asyncio.Event(loop=event_loop)
+    watch_property_event = asyncio.Event()
 
     async def watch_property_side_effect(*_, **__):
         await watch_property_event.wait()
@@ -342,18 +340,18 @@ async def test_multiple_registration_changes(mock_alias_server, mock_client,
     todo = []
     for _ in range(10):
         for behaviour in ["PROPERTY-1:N", "EVENT-N:1"]:
-            todo.append(a._on_target_registration_changed(
+            todo.append(asyncio.create_task(a._on_target_registration_changed(
                 "foo/target", [{
                     "behaviour": behaviour,
                     "description": "Target description",
-                }]))
+                }])))
 
     # Make sure they all get started...
-    await asyncio.sleep(0.1, loop=event_loop)
+    await asyncio.sleep(0.1)
 
     # let them all proceed
     watch_property_event.set()
-    await asyncio.wait(todo, loop=event_loop)
+    await asyncio.wait(todo)
 
     # Make sure the final registration settles on one value
     assert a._watching_property != a._watching_event

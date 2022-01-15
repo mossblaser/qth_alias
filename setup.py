@@ -25,13 +25,12 @@ setup(
         "Operating System :: MacOS",
 
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.10",
     ],
     keywords="mqtt asyncio home-automation messaging",
 
     # Requirements
-    install_requires=["qth>=0.6.0", "qth_ls>=0.1.0"],
+    install_requires=["qth>=0.7.0", "qth_ls>=0.2.0"],
 
     # Scripts
     entry_points={

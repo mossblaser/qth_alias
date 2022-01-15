@@ -38,7 +38,7 @@ class Alias(object):
         # * Seting up (and clearing) watches of the target and alias
         #   property/event
         #
-        self._registration_change_lock = asyncio.Lock(loop=self._loop)
+        self._registration_change_lock = asyncio.Lock()
 
         # The most recently sent alias registration
         self._alias_registration = None
@@ -58,9 +58,9 @@ class Alias(object):
     async def async_init(self):
         """Call asynchronously shortly after construction to complete setup."""
         await asyncio.wait([
-            self._ls.watch_path(
-                self._target, self._on_target_registration_changed),
-        ], loop=self._loop)
+            asyncio.create_task(self._ls.watch_path(
+                self._target, self._on_target_registration_changed)),
+        ])
 
     async def delete(self):
         """Remove the alias."""
@@ -105,7 +105,7 @@ class Alias(object):
                     todo.append(self._client.delete_property(self._alias))
 
             if todo:
-                await asyncio.wait(todo, loop=self._loop)
+                await asyncio.wait([asyncio.create_task(c) for c in todo])
 
     @property
     def json(self):
@@ -117,10 +117,6 @@ class Alias(object):
             "inverse": self._inverse_code,
             "description": self._description,
         }
-
-    @property
-    def _loop(self):
-        return self._alias_server._loop
 
     @property
     def _client(self):
@@ -284,4 +280,4 @@ class Alias(object):
                         self._target, self._on_target_sent))
 
             if todo:
-                await asyncio.wait(todo, loop=self._loop)
+                await asyncio.wait([asyncio.create_task(c) for c in todo])
